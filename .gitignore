@@ -1,0 +1,51 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.egg-info/
+.eggs/
+build/
+dist/
+
+# Virtual env (у тебя видно по промпту "venv", но игнорируем оба варианта на всякий случай)
+venv/
+.venv/
+env/
+
+# Env vars / secrets
+.env
+.env.*
+!.env.example
+
+# DB
+*.db
+*.sqlite3
+
+# Alembic — миграции коммитим, версии НЕ игнорируем
+# (просто напоминание, отдельной строки не нужно)
+
+# IDE
+.vscode/
+.idea/
+*.swp
+
+# Tests / coverage
+.pytest_cache/
+.coverage
+htmlcov/
+.mypy_cache/
+.ruff_cache/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+
+# Временные тестовые файлы, которые мы делали для проверки
+test_groq.py
+test_currency.py
+
+# Docker (когда дойдёшь)
+docker-compose.override.yml
