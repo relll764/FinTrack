@@ -8,7 +8,12 @@ from app.models.user import User
 from app.models.expense import Expense
 from app.schemas.expense import ExpenseCreate, ExpenseOut
 from app.services.categorization import categorize
-
+import logging
+logging.basicConfig(
+    level=logging.INFO,  # Минимальный уровень логов для вывода
+    format="%(asctime)s [%(levelname)s] %(message)s",  # Формат: Время [Уровень] Сообщение
+    datefmt="%Y-%m-%d %H:%M:%S"
+)
 router = APIRouter(prefix="/expenses", tags=["expenses"])
 
 @router.post("/", response_model=ExpenseOut, status_code=status.HTTP_201_CREATED)

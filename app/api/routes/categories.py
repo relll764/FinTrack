@@ -12,6 +12,12 @@ router = APIRouter(prefix="/categories", tags=["categories"])
 
 @router.post("/", response_model=CategoryOut, status_code=status.HTTP_201_CREATED)
 def create_category(category_in: CategoryCreate, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
+    existing_category = db.query(Category).filter(Category.user_id == current_user.id, Category.name == category_in.name).first()
+    if existing_category:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Категория '{category_in.nam}' уже существует."
+        )
     category = Category(name=category_in.name, user_id=current_user.id)
     db.add(category)
     db.commit()
@@ -21,7 +27,8 @@ def create_category(category_in: CategoryCreate, db: Session = Depends(get_db), 
 
 @router.get("/", response_model=list[CategoryOut])
 def list_categories(db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
-    return db.query(Category).filter(Category.user_id == current_user.id).all()
+    categories = db.query(Category).filter(Category.user_id == current_user.id).all()
+    return categories
 
 
 
