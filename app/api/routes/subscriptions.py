@@ -1,6 +1,7 @@
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, status
 from sqlalchemy.orm import Session
 
+from app.api.crud_helpers import get_owned_or_404
 from app.db.session import get_db
 from app.api.deps import get_current_user
 from app.models.user import User
@@ -31,19 +32,13 @@ def get_all_subscriptions(db: Session = Depends(get_db), current_user: User = De
 
 @router.get("/{subscription_id}", response_model=SubscriptionOut)
 def get_subscription(subscription_id: int, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
-    subscription = db.query(Subscription).filter(Subscription.id == subscription_id,
-                                                 Subscription.user_id == current_user.id).first()
-    if not subscription:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Subscription not found")
+    subscription = get_owned_or_404(db, Subscription, subscription_id, current_user.id)
     return subscription
 
 
 @router.put("/{subscription_id}", response_model=SubscriptionOut)
 def update_subscription(subscription_id: int, subscription_in: SubscriptionCreate, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
-    subscription = db.query(Subscription).filter(Subscription.id == subscription_id,
-                                                 Subscription.user_id == current_user.id).first()
-    if not subscription:
-        raise HTTPException(status_code=404, detail="Subscription not found")
+    subscription = get_owned_or_404(db, Subscription, subscription_id, current_user.id)
 
     subscription.name = subscription_in.name
     subscription.amount = subscription_in.amount
@@ -56,9 +51,7 @@ def update_subscription(subscription_id: int, subscription_in: SubscriptionCreat
 
 @router.delete("/{subscription_id}", status_code=status.HTTP_204_NO_CONTENT)
 def delete_subscription(subscription_id: int, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
-    subscription = db.query(Subscription).filter(Subscription.id == subscription_id, Subscription.user_id == current_user.id).first()
-    if not subscription:
-        raise HTTPException(status_code=404, detail="Subscription not found")
+    subscription = get_owned_or_404(db, Subscription, subscription_id, current_user.id)
     db.delete(subscription)
     db.commit()
     return None

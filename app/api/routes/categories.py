@@ -1,6 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 
+from app.api.crud_helpers import get_owned_or_404
 from app.db.session import get_db
 from app.api.deps import get_current_user
 from app.models.user import User
@@ -16,7 +17,7 @@ def create_category(category_in: CategoryCreate, db: Session = Depends(get_db), 
     if existing_category:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail=f"Категория '{category_in.nam}' уже существует."
+            detail=f"Категория '{category_in.name}' уже существует."
         )
     category = Category(name=category_in.name, user_id=current_user.id)
     db.add(category)
@@ -34,9 +35,7 @@ def list_categories(db: Session = Depends(get_db), current_user: User = Depends(
 
 @router.delete("/{category_id}", status_code=status.HTTP_204_NO_CONTENT)
 def delete_category(category_id: int, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
-    category = db.query(Category).filter(Category.id == category_id, Category.user_id == current_user.id).first()
-    if not category:
-        raise HTTPException(status_code=404, detail="Category not found")
+    category = get_owned_or_404(db, Category, category_id, current_user.id)
     db.delete(category)
     db.commit()
     return None

@@ -4,6 +4,7 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy import func
 from sqlalchemy.orm import Session
 
+from app.api.crud_helpers import get_owned_or_404
 from app.db.session import get_db
 from app.api.deps import get_current_user
 from app.models.user import User
@@ -37,9 +38,7 @@ def list_budgets(db: Session = Depends(get_db), current_user: User = Depends(get
 
 @router.delete("/{budget_id}", status_code=status.HTTP_204_NO_CONTENT)
 def delete_budget(budget_id: int, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
-    budget = db.query(Budget).filter(Budget.id == budget_id, Budget.user_id == current_user.id).first()
-    if not budget:
-        raise HTTPException(status_code=404, detail="Budget not found")
+    budget = get_owned_or_404(db, Budget, budget_id, current_user.id)
     db.delete(budget)
     db.commit()
     return None
@@ -47,9 +46,7 @@ def delete_budget(budget_id: int, db: Session = Depends(get_db), current_user: U
 
 @router.get("/{budget_id}/status")
 def get_budget_status(budget_id: int, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
-    budget = db.query(Budget).filter(Budget.id == budget_id, Budget.user_id == current_user.id).first()
-    if not budget:
-        raise HTTPException(status_code=404, detail="Budget not found")
+    budget = get_owned_or_404(db, Budget, budget_id, current_user.id)
 
     start_of_month = date.today().replace(day=1)
 

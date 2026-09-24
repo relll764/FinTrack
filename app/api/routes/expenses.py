@@ -1,6 +1,7 @@
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, status
 from sqlalchemy.orm import Session
 
+from app.api.crud_helpers import get_owned_or_404
 from app.db.session import get_db
 from app.api.deps import get_current_user
 from app.models import Category
@@ -8,12 +9,8 @@ from app.models.user import User
 from app.models.expense import Expense
 from app.schemas.expense import ExpenseCreate, ExpenseOut
 from app.services.categorization import categorize
-import logging
-logging.basicConfig(
-    level=logging.INFO,  # Минимальный уровень логов для вывода
-    format="%(asctime)s [%(levelname)s] %(message)s",  # Формат: Время [Уровень] Сообщение
-    datefmt="%Y-%m-%d %H:%M:%S"
-)
+
+
 router = APIRouter(prefix="/expenses", tags=["expenses"])
 
 @router.post("/", response_model=ExpenseOut, status_code=status.HTTP_201_CREATED)
@@ -56,17 +53,12 @@ def get_all_expenses(db: Session = Depends(get_db),current_user: User = Depends(
 
 @router.get("/{expense_id}", response_model=ExpenseOut)
 def get_expense(expense_id: int, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
-    expense = db.query(Expense).filter(Expense.user_id == current_user.id, Expense.id == expense_id).first()
-    if not expense:
-        raise HTTPException(status_code=404, detail="Expense not found")
-    return expense
+    return get_owned_or_404(db, Expense, expense_id, current_user.id)
 
 
 @router.put("/{expense_id}", response_model=ExpenseOut)
 def update_expense(expense_id: int, expense_in: ExpenseCreate, db: Session = Depends(get_db),current_user: User = Depends(get_current_user)):
-    expense = db.query(Expense).filter(Expense.id == expense_id, Expense.user_id == current_user.id).first()
-    if not expense:
-        raise HTTPException(status_code=404, detail="Expense not found")
+    expense = get_owned_or_404(db, Expense, expense_id, current_user.id)
     expense.amount = expense_in.amount
     expense.currency = expense_in.currency
     expense.description = expense_in.description
@@ -78,9 +70,7 @@ def update_expense(expense_id: int, expense_in: ExpenseCreate, db: Session = Dep
 
 @router.delete("/{expense_id}", status_code=status.HTTP_204_NO_CONTENT)
 def delete_expense(expense_id: int, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
-    expense = db.query(Expense).filter(Expense.id == expense_id, Expense.user_id == current_user.id).first()
-    if not expense:
-        raise HTTPException(status_code=404, detail="Expense not found")
+    expense = get_owned_or_404(db, Expense, expense_id, current_user.id)
     db.delete(expense)
     db.commit()
     return None
