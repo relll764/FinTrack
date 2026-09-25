@@ -1,4 +1,4 @@
-from datetime import date, timedelta
+from datetime import date as date_type, datetime, timedelta, timezone
 from typing import Optional
 
 from fastapi import APIRouter, Depends, status
@@ -9,7 +9,7 @@ from app.db.session import get_db
 from app.api.deps import get_current_user
 from app.models.user import User
 from app.models.expense import Expense
-from app.schemas.expense import ExpenseCreate, ExpenseOut
+from app.schemas.expense import ExpenseCreate, ExpenseOut, ExpenseUpdate
 from app.services.categorization import resolve_category_id
 
 router = APIRouter(prefix="/expenses", tags=["expenses"])
@@ -35,18 +35,18 @@ def create_expense(expense_in: ExpenseCreate, db: Session = Depends(get_db), cur
 
 @router.get("/", response_model=list[ExpenseOut])
 def get_all_expenses(
-    date_from: Optional[date] = None,
-    date_to: Optional[date] = None,
+    date_from: Optional[date_type] = None,
+    date_to: Optional[date_type] = None,
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
     query = db.query(Expense).filter(Expense.user_id == current_user.id)
 
     if date_from is not None:
-        query = query.filter(Expense.date >= date_from)
+        query = query.filter(Expense.created_at >= datetime.combine(date_from, datetime.min.time(), tzinfo=timezone.utc))
 
     if date_to is not None:
-        query = query.filter(Expense.date < date_to + timedelta(days=1))
+        query = query.filter(Expense.created_at < datetime.combine(date_to + timedelta(days=1), datetime.min.time(), tzinfo=timezone.utc))
 
     return query.all()
 
@@ -57,10 +57,12 @@ def get_expense(expense_id: int, db: Session = Depends(get_db), current_user: Us
 
 
 @router.put("/{expense_id}", response_model=ExpenseOut)
-def update_expense(expense_id: int, expense_in: ExpenseCreate, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
+def update_expense(expense_id: int, expense_in: ExpenseUpdate, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
     expense = get_owned_or_404(db, Expense, expense_id, current_user.id)
 
-    if expense_in.category_id is not None:
+    if expense_in.auto_categorize:
+        expense.category_id = resolve_category_id(None, expense_in.description, db, current_user.id)
+    elif expense_in.category_id is not None:
         expense.category_id = expense_in.category_id
 
     expense.amount = expense_in.amount

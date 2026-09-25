@@ -1,4 +1,4 @@
-from datetime import datetime, date
+from datetime import date
 
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy import func
@@ -48,7 +48,7 @@ def delete_budget(budget_id: int, db: Session = Depends(get_db), current_user: U
 def get_budget_status(budget_id: int, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
     budget = get_owned_or_404(db, Budget, budget_id, current_user.id)
 
-    start_of_month = datetime.combine(date.today().replace(day=1), datetime.min.time())
+    start_of_month = date.today().replace(day=1)
 
     spent = db.query(func.sum(Expense.amount)).filter(
         Expense.user_id == current_user.id,

@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, date
 from typing import Optional
 
 from pydantic import BaseModel
@@ -8,7 +8,7 @@ class ExpenseCreate(BaseModel):
     amount: float
     currency: str
     description: Optional[str] = None
-    date: datetime
+    date: date
     category_id: Optional[int] = None
 
 
@@ -20,6 +20,14 @@ class ExpenseOut(BaseModel):
     amount: float
     currency: str
     description: Optional[str]
-    date: datetime
+    date: date
 
     model_config = {"from_attributes": True}
+
+class ExpenseUpdate(BaseModel):
+    amount: float
+    currency: str
+    description: Optional[str] = None
+    date: date
+    category_id: Optional[int] = None
+    auto_categorize: bool = False

@@ -1,4 +1,4 @@
-from datetime import datetime, timezone
+from datetime import datetime, timezone, date
 
 from sqlalchemy import Numeric, DateTime, Date
 from sqlalchemy import ForeignKey
@@ -16,7 +16,7 @@ class Expense(Base):
     amount: Mapped[float] = mapped_column(Numeric(10, 2), nullable=False)
     currency: Mapped[str] = mapped_column(String(3), nullable=False)
     description: Mapped[str] = mapped_column(String(100), nullable=True)
-    date: Mapped[datetime] = mapped_column(DateTime, nullable=False)
+    date: Mapped[date] = mapped_column(Date, nullable=False)
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), default=lambda: datetime.now(timezone.utc)
     )
