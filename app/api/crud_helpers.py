@@ -10,3 +10,6 @@ def get_owned_or_404(db: Session, model, obj_id: int, user_id: int):
             detail=f"{model.__name__} not found",
         )
     return obj
+
+def get_all_owned(db: Session, model, user_id: int):
+    return db.query(model).filter(model.user_id == user_id).all()

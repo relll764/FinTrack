@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Depends, status
 from sqlalchemy.orm import Session
 
-from app.api.crud_helpers import get_owned_or_404
+from app.api.crud_helpers import get_owned_or_404, get_all_owned
 from app.db.session import get_db
 from app.api.deps import get_current_user
 from app.models import Category
@@ -48,7 +48,12 @@ def create_expense(expense_in: ExpenseCreate, db: Session = Depends(get_db), cur
 
 @router.get("/", response_model=list[ExpenseOut])
 def get_all_expenses(db: Session = Depends(get_db),current_user: User = Depends(get_current_user)):
-    return db.query(Expense).filter(Expense.user_id ==current_user.id).all()
+    from rich import print
+    expenses = get_all_owned(db, Expense, current_user.id)
+    # Выведет красиво оформленный список атрибутов
+    for exp in expenses:
+        print(exp.__dict__)
+    return get_all_owned(db, Expense, current_user.id)
 
 
 @router.get("/{expense_id}", response_model=ExpenseOut)

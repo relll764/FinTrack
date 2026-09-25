@@ -4,7 +4,7 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy import func
 from sqlalchemy.orm import Session
 
-from app.api.crud_helpers import get_owned_or_404
+from app.api.crud_helpers import get_owned_or_404, get_all_owned
 from app.db.session import get_db
 from app.api.deps import get_current_user
 from app.models.user import User
@@ -33,7 +33,7 @@ def create_budget(budget_in: BudgetCreate, db: Session = Depends(get_db), curren
 
 @router.get("/", response_model=list[BudgetOut])
 def list_budgets(db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
-    return db.query(Budget).filter(Budget.user_id == current_user.id).all()
+    return get_all_owned(db, Budget, current_user.id)
 
 
 @router.delete("/{budget_id}", status_code=status.HTTP_204_NO_CONTENT)

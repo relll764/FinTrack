@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 
-from app.api.crud_helpers import get_owned_or_404
+from app.api.crud_helpers import get_owned_or_404, get_all_owned
 from app.db.session import get_db
 from app.api.deps import get_current_user
 from app.models.user import User
@@ -28,8 +28,7 @@ def create_category(category_in: CategoryCreate, db: Session = Depends(get_db), 
 
 @router.get("/", response_model=list[CategoryOut])
 def list_categories(db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
-    categories = db.query(Category).filter(Category.user_id == current_user.id).all()
-    return categories
+    return get_all_owned(db, Category, current_user.id)
 
 
 

@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Depends, status
 from sqlalchemy.orm import Session
 
-from app.api.crud_helpers import get_owned_or_404
+from app.api.crud_helpers import get_owned_or_404, get_all_owned
 from app.db.session import get_db
 from app.api.deps import get_current_user
 from app.models.user import User
@@ -27,8 +27,7 @@ def create_subscription(subscription_in: SubscriptionCreate, db: Session = Depen
 
 @router.get("/", response_model=list[SubscriptionOut])
 def get_all_subscriptions(db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
-    subscriptions = db.query(Subscription).filter(Subscription.user_id == current_user.id).all()
-    return subscriptions
+    return get_all_owned(db, Subscription, current_user.id)
 
 @router.get("/{subscription_id}", response_model=SubscriptionOut)
 def get_subscription(subscription_id: int, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
