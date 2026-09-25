@@ -4,34 +4,17 @@ from sqlalchemy.orm import Session
 from app.api.crud_helpers import get_owned_or_404, get_all_owned
 from app.db.session import get_db
 from app.api.deps import get_current_user
-from app.models import Category
 from app.models.user import User
 from app.models.expense import Expense
 from app.schemas.expense import ExpenseCreate, ExpenseOut
-from app.services.categorization import categorize
-
+from app.services.categorization import resolve_category_id
 
 router = APIRouter(prefix="/expenses", tags=["expenses"])
 
 @router.post("/", response_model=ExpenseOut, status_code=status.HTTP_201_CREATED)
 def create_expense(expense_in: ExpenseCreate, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
-    category_id = expense_in.category_id
+    category_id = resolve_category_id(expense_in.category_id, expense_in.description, db, current_user.id)
 
-    if category_id is None and expense_in.description:
-        user_categories = db.query(Category).filter(Category.user_id == current_user.id).all()
-        category_names = [c.name for c in user_categories]
-
-        predicted_name = categorize(expense_in.description, category_names)
-
-        if predicted_name is not None:
-            category = db.query(Category).filter(
-                Category.name == predicted_name,
-                Category.user_id == current_user.id
-            ).first()
-            if category:
-                category_id = category.id
-
-    # теперь один-единственный блок создания, неважно откуда взялся category_id
     expense = Expense(
         user_id=current_user.id,
         category_id=category_id,
@@ -48,11 +31,6 @@ def create_expense(expense_in: ExpenseCreate, db: Session = Depends(get_db), cur
 
 @router.get("/", response_model=list[ExpenseOut])
 def get_all_expenses(db: Session = Depends(get_db),current_user: User = Depends(get_current_user)):
-    from rich import print
-    expenses = get_all_owned(db, Expense, current_user.id)
-    # Выведет красиво оформленный список атрибутов
-    for exp in expenses:
-        print(exp.__dict__)
     return get_all_owned(db, Expense, current_user.id)
 
 
@@ -62,8 +40,12 @@ def get_expense(expense_id: int, db: Session = Depends(get_db), current_user: Us
 
 
 @router.put("/{expense_id}", response_model=ExpenseOut)
-def update_expense(expense_id: int, expense_in: ExpenseCreate, db: Session = Depends(get_db),current_user: User = Depends(get_current_user)):
+def update_expense(expense_id: int, expense_in: ExpenseCreate, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
     expense = get_owned_or_404(db, Expense, expense_id, current_user.id)
+
+    if expense_in.category_id is not None:
+        expense.category_id = expense_in.category_id
+
     expense.amount = expense_in.amount
     expense.currency = expense_in.currency
     expense.description = expense_in.description

@@ -7,6 +7,9 @@ from app.api.deps import get_current_user
 from app.models.user import User
 from app.models.category import Category
 from app.schemas.category import CategoryCreate, CategoryOut
+from sqlalchemy.orm import joinedload
+from app.schemas.category import CategoryWithExpenses
+
 
 router = APIRouter(prefix="/categories", tags=["categories"])
 
@@ -31,10 +34,20 @@ def list_categories(db: Session = Depends(get_db), current_user: User = Depends(
     return get_all_owned(db, Category, current_user.id)
 
 
-
 @router.delete("/{category_id}", status_code=status.HTTP_204_NO_CONTENT)
 def delete_category(category_id: int, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
     category = get_owned_or_404(db, Category, category_id, current_user.id)
     db.delete(category)
     db.commit()
     return None
+
+
+@router.get("/with-expenses", response_model=list[CategoryWithExpenses])
+def get_categories_with_expenses(db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
+    categories = (
+        db.query(Category)
+        .filter(Category.user_id == current_user.id)
+        .options(joinedload(Category.expenses))
+        .all()
+    )
+    return categories

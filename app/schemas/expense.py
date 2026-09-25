@@ -15,7 +15,7 @@ class ExpenseCreate(BaseModel):
 class ExpenseOut(BaseModel):
     id: int
     user_id: int
-    category_id: Optional[int]
+    category_id: int
     created_at: datetime
     amount: float
     currency: str
