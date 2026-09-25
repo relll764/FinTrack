@@ -1,3 +1,6 @@
+from datetime import date, timedelta
+from typing import Optional
+
 from fastapi import APIRouter, Depends, status
 from sqlalchemy.orm import Session
 
@@ -29,9 +32,23 @@ def create_expense(expense_in: ExpenseCreate, db: Session = Depends(get_db), cur
     return expense
 
 
+
 @router.get("/", response_model=list[ExpenseOut])
-def get_all_expenses(db: Session = Depends(get_db),current_user: User = Depends(get_current_user)):
-    return get_all_owned(db, Expense, current_user.id)
+def get_all_expenses(
+    date_from: Optional[date] = None,
+    date_to: Optional[date] = None,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    query = db.query(Expense).filter(Expense.user_id == current_user.id)
+
+    if date_from is not None:
+        query = query.filter(Expense.date >= date_from)
+
+    if date_to is not None:
+        query = query.filter(Expense.date < date_to + timedelta(days=1))
+
+    return query.all()
 
 
 @router.get("/{expense_id}", response_model=ExpenseOut)
