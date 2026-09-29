@@ -2,7 +2,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from sqladmin import Admin, ModelView
 
-from app.api.routes import auth, categories, subscriptions, expenses, budgets
+from app.api.routes import auth, categories, subscriptions, expenses, budgets, accounts
 
 from app.db.session import engine
 from app.models.user import User
@@ -10,6 +10,7 @@ from app.models.category import Category
 from app.models.expense import Expense
 from app.models.subscription import Subscription
 from app.models.budget import Budget
+from app.models.account import Account
 
 from app.core.logging_config import setup_logging
 
@@ -38,6 +39,7 @@ app.include_router(categories.router)
 app.include_router(subscriptions.router)
 app.include_router(expenses.router)
 app.include_router(budgets.router)
+app.include_router(accounts.router)
 
 class UserAdmin(ModelView, model=User):
     column_list = [User.id, User.email, User.username, User.created_at]
@@ -71,12 +73,17 @@ class BudgetAdmin(ModelView, model=Budget):
     name = "Бюджет"
     name_plural = "Бюджеты"
 
+class AcountAdmin(ModelView, model=Account):
+    column_list = [Account.id, Account.user_id, Account.name, Account.balance, Account.currency, Account.created_at]
+    name = "Счета"
+    name_plural = "Счета"
 
 admin.add_view(UserAdmin)
 admin.add_view(CategoryAdmin)
 admin.add_view(ExpenseAdmin)
 admin.add_view(SubscriptionAdmin)
 admin.add_view(BudgetAdmin)
+admin.add_view(AcountAdmin)
 
 @app.get("/health")
 def health_check():

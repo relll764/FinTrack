@@ -4,7 +4,7 @@ from typing import Optional
 from fastapi import APIRouter, Depends, status
 from sqlalchemy.orm import Session
 
-from app.api.crud_helpers import get_owned_or_404, get_all_owned
+from app.api.crud_helpers import get_owned_or_404
 from app.db.session import get_db
 from app.api.deps import get_current_user
 from app.models.user import User
