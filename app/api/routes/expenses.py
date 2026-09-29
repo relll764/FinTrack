@@ -1,12 +1,13 @@
 from datetime import date as date_type, datetime, timedelta, timezone
 from typing import Optional
 
-from fastapi import APIRouter, Depends, status
+from fastapi import APIRouter, Depends, status, HTTPException
 from sqlalchemy.orm import Session
 
 from app.api.crud_helpers import get_owned_or_404
 from app.db.session import get_db
 from app.api.deps import get_current_user
+from app.models import Account
 from app.models.user import User
 from app.models.expense import Expense
 from app.schemas.expense import ExpenseCreate, ExpenseOut, ExpenseUpdate
@@ -18,13 +19,24 @@ logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/expenses", tags=["expenses"])
 
+from app.services.currency import convert
+
 @router.post("/", response_model=ExpenseOut, status_code=status.HTTP_201_CREATED)
 def create_expense(expense_in: ExpenseCreate, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
     category_id = resolve_category_id(expense_in.category_id, expense_in.description, db, current_user.id)
 
+    account_amount = None
+    if expense_in.account_id is not None:
+        account = get_owned_or_404(db, Account, expense_in.account_id, current_user.id)
+
+        account_amount = convert(expense_in.amount, expense_in.currency, account.currency)
+        account.balance -= account_amount
+
     expense = Expense(
         user_id=current_user.id,
         category_id=category_id,
+        account_id=expense_in.account_id,
+        account_amount=account_amount,
         amount=expense_in.amount,
         currency=expense_in.currency,
         description=expense_in.description,
@@ -33,7 +45,6 @@ def create_expense(expense_in: ExpenseCreate, db: Session = Depends(get_db), cur
     db.add(expense)
     db.commit()
     db.refresh(expense)
-    logger.info(f"Expense created: user_id={current_user.id}, expense_id={expense.id}, amount={expense.amount}")
     return expense
 
 
@@ -65,11 +76,24 @@ def get_expense(expense_id: int, db: Session = Depends(get_db), current_user: Us
 def update_expense(expense_id: int, expense_in: ExpenseUpdate, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
     expense = get_owned_or_404(db, Expense, expense_id, current_user.id)
 
+    if expense.account_id is not None:
+        old_account = get_owned_or_404(db, Account, expense.account_id, current_user.id)
+        old_account.balance += expense.account_amount
+
     if expense_in.auto_categorize:
         expense.category_id = resolve_category_id(None, expense_in.description, db, current_user.id)
     elif expense_in.category_id is not None:
         expense.category_id = expense_in.category_id
 
+    new_account_id = expense_in.account_id if expense_in.account_id is not None else expense.account_id
+    new_account_amount = None
+    if new_account_id is not None:
+        new_account = get_owned_or_404(db, Account, new_account_id, current_user.id)
+        new_account_amount = convert(expense_in.amount, expense_in.currency, new_account.currency)
+        new_account.balance -= new_account_amount
+
+    expense.account_id = new_account_id
+    expense.account_amount = new_account_amount
     expense.amount = expense_in.amount
     expense.currency = expense_in.currency
     expense.description = expense_in.description
@@ -82,6 +106,11 @@ def update_expense(expense_id: int, expense_in: ExpenseUpdate, db: Session = Dep
 @router.delete("/{expense_id}", status_code=status.HTTP_204_NO_CONTENT)
 def delete_expense(expense_id: int, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
     expense = get_owned_or_404(db, Expense, expense_id, current_user.id)
+
+    if expense.account_id is not None:
+        account = get_owned_or_404(db, Account, expense.account_id, current_user.id)
+        account.balance += expense.account_amount
+
     db.delete(expense)
     db.commit()
     return None

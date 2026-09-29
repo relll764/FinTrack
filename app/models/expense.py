@@ -1,4 +1,5 @@
 from datetime import datetime, timezone, date
+from typing import Optional
 
 from sqlalchemy import Numeric, DateTime, Date, ForeignKey, String
 from sqlalchemy.orm import Mapped, mapped_column, relationship
@@ -19,4 +20,7 @@ class Expense(Base):
         DateTime(timezone=True), default=lambda: datetime.now(timezone.utc)
     )
     category: Mapped["Category"] = relationship(back_populates="expenses")
+    account_id: Mapped[Optional[int]] = mapped_column(ForeignKey("accounts.id"), nullable=True)
+    account: Mapped[Optional["Account"]] = relationship(back_populates="expenses")
+    account_amount: Mapped[Optional[float]] = mapped_column(Numeric(10, 2), nullable=True)
 

@@ -1,4 +1,4 @@
-from sqlalchemy.orm import Mapped, mapped_column
+from sqlalchemy.orm import Mapped, mapped_column, relationship
 from sqlalchemy import ForeignKey, String, Numeric, DateTime
 from datetime import datetime, timezone
 from app.db.base import Base
@@ -15,3 +15,4 @@ class Account(Base):
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), default=lambda: datetime.now(timezone.utc)
     )
+    expenses: Mapped[list["Expense"]] = relationship(back_populates="account")

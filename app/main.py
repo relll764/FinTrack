@@ -2,7 +2,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from sqladmin import Admin, ModelView
 
-from app.api.routes import auth, categories, subscriptions, expenses, budgets, accounts
+from app.api.routes import auth, categories, subscriptions, expenses, budgets, accounts, currencies
 
 from app.db.session import engine
 from app.models.user import User
@@ -40,6 +40,7 @@ app.include_router(subscriptions.router)
 app.include_router(expenses.router)
 app.include_router(budgets.router)
 app.include_router(accounts.router)
+app.include_router(currencies.router)
 
 class UserAdmin(ModelView, model=User):
     column_list = [User.id, User.email, User.username, User.created_at]
