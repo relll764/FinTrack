@@ -12,6 +12,10 @@ from app.models.expense import Expense
 from app.schemas.expense import ExpenseCreate, ExpenseOut, ExpenseUpdate
 from app.services.categorization import resolve_category_id
 
+import logging
+
+logger = logging.getLogger(__name__)
+
 router = APIRouter(prefix="/expenses", tags=["expenses"])
 
 @router.post("/", response_model=ExpenseOut, status_code=status.HTTP_201_CREATED)
@@ -29,6 +33,7 @@ def create_expense(expense_in: ExpenseCreate, db: Session = Depends(get_db), cur
     db.add(expense)
     db.commit()
     db.refresh(expense)
+    logger.info(f"Expense created: user_id={current_user.id}, expense_id={expense.id}, amount={expense.amount}")
     return expense
 
 

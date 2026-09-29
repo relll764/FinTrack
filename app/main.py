@@ -7,6 +7,11 @@ from app.api.routes import subscriptions
 from app.api.routes import expenses
 from app.api.routes import budgets
 
+from app.core.logging_config import setup_logging
+
+setup_logging()
+
+
 app = FastAPI(title="FinTrack API")
 
 # 1. Настройка разрешённых истоков (Origins)
