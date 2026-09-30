@@ -1,3 +1,6 @@
+from datetime import date
+
+
 def test_budget_status_no_expenses(client, auth_headers):
     category_response = client.post("/categories/", json={"name": "Еда"}, headers=auth_headers)
     category_id = category_response.json()["id"]
@@ -13,24 +16,24 @@ def test_budget_status_no_expenses(client, auth_headers):
     assert data["exceeded"] is False
 
 
-def test_budget_status_exceeded(client, auth_headers):
-    category_response = client.post("/categories/", json={"name": "Еда"}, headers=auth_headers)
-    category_id = category_response.json()["id"]
+def test_budget_status_exceeded(client, auth_headers, make_category):
+    category_id = make_category()
 
     budget_response = client.post(
         "/budgets/", json={"category_id": category_id, "monthly_limit": 100}, headers=auth_headers
     )
     budget_id = budget_response.json()["id"]
 
-    # создаём расходы на общую сумму 150, превышая лимит в 100
+    today = date.today().isoformat()
+
     client.post(
         "/expenses/",
-        json={"amount": 100, "currency": "USD", "description": None, "date": "2026-09-20", "category_id": category_id},
+        json={"amount": 100, "currency": "USD", "description": None, "date": today, "category_id": category_id},
         headers=auth_headers,
     )
     client.post(
         "/expenses/",
-        json={"amount": 50, "currency": "USD", "description": None, "date": "2026-09-21", "category_id": category_id},
+        json={"amount": 50, "currency": "USD", "description": None, "date": today, "category_id": category_id},
         headers=auth_headers,
     )
 

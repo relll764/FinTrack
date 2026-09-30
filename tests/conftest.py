@@ -53,3 +53,22 @@ def auth_headers(client):
     })
     token = response.json()["access_token"]
     return {"Authorization": f"Bearer {token}"}
+
+@pytest.fixture()
+def make_category(client, auth_headers):
+    def _make(name="Еда"):
+        response = client.post("/categories/", json={"name": name}, headers=auth_headers)
+        return response.json()["id"]
+    return _make
+
+
+@pytest.fixture()
+def make_account(client, auth_headers):
+    def _make(name="Основной счёт", balance=1000.0, currency="USD"):
+        response = client.post(
+            "/accounts/",
+            json={"name": name, "balance": balance, "currency": currency, "description": None},
+            headers=auth_headers,
+        )
+        return response.json()["id"]
+    return _make

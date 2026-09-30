@@ -22,3 +22,9 @@ def test_delete_category(client, auth_headers):
 
     list_response = client.get("/categories/", headers=auth_headers)
     assert len(list_response.json()) == 0
+
+
+def test_cannot_create_duplicate_category(client, auth_headers):
+    client.post("/categories/", json={"name": "Еда"}, headers=auth_headers)
+    second = client.post("/categories/", json={"name": "Еда"}, headers=auth_headers)
+    assert second.status_code == 400

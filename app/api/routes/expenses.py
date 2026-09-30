@@ -30,7 +30,7 @@ def create_expense(expense_in: ExpenseCreate, db: Session = Depends(get_db), cur
         account = get_owned_or_404(db, Account, expense_in.account_id, current_user.id)
 
         account_amount = convert(expense_in.amount, expense_in.currency, account.currency)
-        account.balance -= account_amount
+        account.balance = float(account.balance) - float(account_amount)
 
     expense = Expense(
         user_id=current_user.id,
@@ -78,7 +78,7 @@ def update_expense(expense_id: int, expense_in: ExpenseUpdate, db: Session = Dep
 
     if expense.account_id is not None:
         old_account = get_owned_or_404(db, Account, expense.account_id, current_user.id)
-        old_account.balance += expense.account_amount
+        old_account.balance = float(old_account.balance) + float(expense.account_amount)
 
     if expense_in.auto_categorize:
         expense.category_id = resolve_category_id(None, expense_in.description, db, current_user.id)
@@ -90,7 +90,7 @@ def update_expense(expense_id: int, expense_in: ExpenseUpdate, db: Session = Dep
     if new_account_id is not None:
         new_account = get_owned_or_404(db, Account, new_account_id, current_user.id)
         new_account_amount = convert(expense_in.amount, expense_in.currency, new_account.currency)
-        new_account.balance -= new_account_amount
+        new_account.balance = float(new_account.balance) - float(new_account_amount)
 
     expense.account_id = new_account_id
     expense.account_amount = new_account_amount
@@ -109,7 +109,7 @@ def delete_expense(expense_id: int, db: Session = Depends(get_db), current_user:
 
     if expense.account_id is not None:
         account = get_owned_or_404(db, Account, expense.account_id, current_user.id)
-        account.balance += expense.account_amount
+        account.balance = float(account.balance) + float(expense.account_amount)
 
     db.delete(expense)
     db.commit()
